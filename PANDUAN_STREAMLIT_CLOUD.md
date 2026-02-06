@@ -4,42 +4,82 @@ Ini adalah panduan langkah demi langkah untuk men-online-kan aplikasi Rapor Sisw
 
 ⚠️ **PENTING: Masalah Data Hilang**
 Streamlit Cloud sifatnya "Ephemeral" (sementara). Artinya, setiap kali aplikasi restart (atau 'tidur' karena tidak dibuka), file lokal seperti database `report_card.db` akan **ter-reset** kembali ke kondisi awal yang ada di GitHub.
-**Solusi:**
-
-- Untuk penggunaan jangka pendek/demo: Tidak masalah, tapi Anda harus rajin **Upload Ulang CSV** setiap kali membuka aplikasi jika datanya hilang.
-- Jika link siswa harus permanen: Anda perlu menggunakan database eksternal (seperti Google Sheets atau Supabase) di masa depan. Untuk sekarang, ikuti panduan ini untuk demo/testing.
 
 ---
 
-## Langkah 1: Siapkan GitHub
+## Langkah 1: Siapkan GitHub dengan SSH Key
 
-Karena Streamlit Cloud mengambil kode dari GitHub, Anda harus meng-upload kode Anda ke sana.
+GitHub tidak lagi mendukung password biasa. Anda harus menggunakan **SSH Key** agar bisa meng-upload kode.
 
-1.  **Buat Akun GitHub**: Jika belum punya, daftar di [github.com](https://github.com).
-2.  **Buat Repository Baru**:
-    - Login ke GitHub.
-    - Klik tombol `New` (warna hijau) atau tanda `+` di pojok kanan atas -> `New repository`.
-    - Beri nama, misal `aplikasi-rapor`.
-    - Pilih **Public** (agar mudah) atau **Private**.
-    - Klik `Create repository`.
+### 1. Cek / Buat SSH Key
 
-3.  **Upload Kode Anda**:
-    Jika Anda sudah familiar dengan Git di terminal:
+Buka terminal di komputer Anda (laptop candra):
+
+1.  **Cek apakah sudah punya key:**
 
     ```bash
+    ls ~/.ssh/id_ed25519.pub
+    ```
+
+    Jika muncul file, lanjut ke langkah 2. Jika "No such file", buat baru:
+
+    ```bash
+    ssh-keygen -t ed25519 -C "email_anda@example.com"
+    ```
+
+    Tekan **Enter** terus sampai selesai (tidak perlu isi passphrase jika untuk belajar).
+
+2.  **Ambil Public Key:**
+    Tampilkan key yang akan dicopy ke GitHub:
+    ```bash
+    cat ~/.ssh/id_ed25519.pub
+    ```
+    Copy seluruh teks yang muncul (dimulai dengan `ssh-ed25519 ....`).
+
+### 2. Masukkan ke GitHub
+
+1.  Login ke [github.com](https://github.com).
+2.  Kelik Foto Profil (pojok kanan atas) -> **Settings**.
+3.  Pilih menu **SSH and GPG keys** (di menu kiri).
+4.  Klik tombol **New SSH key**.
+5.  **Title**: Isi "Laptop Candra" (bebas).
+6.  **Key**: Paste kode yang tadi Anda copy.
+7.  Klik **Add SSH key**.
+
+### 3. Upload Kode
+
+Sekarang Anda bisa upload kode tanpa password.
+
+1.  **Buat Repository Baru di GitHub**:
+    - Beri nama `aplikasi-rapor`.
+    - Biarkan Public/Private.
+    - **Jangan** centang "Add README".
+
+2.  **Push dari Terminal**:
+    Kembali ke folder proyek Anda:
+
+    ```bash
+    cd /home/candra/Projects/Personal/buatdede
+
+    # Inisialisasi Git
     git init
     git add .
     git commit -m "Upload pertama"
     git branch -M main
-    git remote add origin https://github.com/USERNAME_ANDA/aplikasi-rapor.git
+
+    # PENTING: Gunakan format SSH (git@github.com:...) BUKAN https
+    # Ganti USERNAME_GITHUB dengan username asli Anda
+    git remote add origin git@github.com:USERNAME_GITHUB/aplikasi-rapor.git
+
+    # Jika tadi sudah terlanjur add origin https, hapus dulu:
+    # git remote remove origin
+    # Lalu add ulang yang format git@...
+
+    # Push
     git push -u origin main
     ```
 
-    **Cara Manual (Upload Files):**
-    - Di halaman repository GitHub yang baru dibuat, klik **uploading an existing file**.
-    - Drag & Drop semua file dari folder proyek Anda (`app.py`, `data_processor.py`, `utils.py`, `requirements.txt`).
-    - **PENTING**: Jangan lupa upload file `requirements.txt` agar Streamlit tahu library apa yang harus diinstal.
-    - Klik `Commit changes`.
+    _Jika ditanya `Are you sure you want to continue connecting?`, ketik `yes` lalu Enter._
 
 ---
 
@@ -49,7 +89,7 @@ Karena Streamlit Cloud mengambil kode dari GitHub, Anda harus meng-upload kode A
 2.  Klik tombol **New app**.
 3.  Isi formulir:
     - **Repository**: Pilih repository yang baru Anda buat (`aplikasi-rapor`).
-    - **Branch**: Biasanya `main` atau `master`.
+    - **Branch**: `main`.
     - **Main file path**: `app.py`.
 4.  Klik **Deploy!**.
 
@@ -57,17 +97,19 @@ Karena Streamlit Cloud mengambil kode dari GitHub, Anda harus meng-upload kode A
 
 ## Langkah 3: Konfigurasi Setelah Deploy
 
-1.  Tunggu proses "Baking..." selesai. Ini akan menginstal library python.
-2.  Setelah selesai, aplikasi akan terbuka di domain seperti `https://aplikasi-rapor-anda.streamlit.app`.
-3.  **Login ke Admin**:
-    - Gunakan password default: `dedePetot!` (sesuai kode terakhir Anda).
-4.  **Setting URL Dasar**:
+1.  Tunggu proses "Baking..." selesai.
+2.  **Login ke Admin**: Password default: `dedePetot!`.
+3.  **Setting URL Dasar**:
     - Di dashboard Admin, ganti "URL Dasar Aplikasi" dengan URL baru Anda (contoh: `https://aplikasi-rapor-anda.streamlit.app`).
-    - Ini agar tombol copy link menghasilkan link yang benar.
 
 ---
 
 ## Tips Perawatan
 
-- **Agar Aplikasi Tidak Tidur**: Streamlit Cloud akan "menidurkan" aplikasi jika tidak ada trafik selama beberapa hari. Anda cukup membukanya kembali dan menekan tombol "Wake Up" jika itu terjadi. ingat, database akan kosong kembali saat bangun.
-- **Update Kode**: Jika Anda ingin mengubah kode, cukup edit/upload file baru ke GitHub. Streamlit Cloud akan otomatis mendeteksi perubahan dan me-restart aplikasi.
+- **Update Kode**: Cukup edit file di laptop, lalu:
+  ```bash
+  git add .
+  git commit -m "Update baru"
+  git push
+  ```
+  Streamlit akan otomatis update.

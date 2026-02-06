@@ -14,7 +14,15 @@ def admin_view():
     st.title("Dashboard Admin 🔒")
     
     # Base URL configuration
-    base_url = st.text_input("URL Dasar Aplikasi (untuk link)", value="http://localhost:8501")
+    if "base_url" not in st.session_state:
+        st.session_state.base_url = "http://localhost:8501"
+        
+    base_url = st.text_input("URL Dasar Aplikasi (untuk link)", value=st.session_state.base_url)
+    
+    # Update session state when input changes
+    if base_url != st.session_state.base_url:
+        st.session_state.base_url = base_url
+    
     
     with st.expander("Upload Data Baru", expanded=True):
         uploaded_file = st.file_uploader("Upload CSV atau Excel", type=['csv', 'xlsx'])
@@ -159,15 +167,25 @@ if token:
     parent_view(token)
 else:
     # Admin Login simulation (Sidebar)
-    with st.sidebar:
-        st.header("Akses Admin")
-        password = st.text_input("Password", type="password")
-    
-    if password == "dedePetot!": # Simple hardcoded password
-        admin_view()
+    if "admin_logged_in" not in st.session_state:
+        st.session_state.admin_logged_in = False
+
+    if not st.session_state.admin_logged_in:
+        with st.sidebar:
+            st.header("Akses Admin")
+            password = st.text_input("Password", type="password")
+            if st.button("Login"):
+                if password == "dedePetot!": # Simple hardcoded password
+                    st.session_state.admin_logged_in = True
+                    st.rerun()
+                elif password:
+                    st.error("Password Admin salah.")
     else:
-        st.title("Selamat Datang di Portal Rapor")
-        st.info("Silakan gunakan link unik yang diberikan untuk melihat rapor.")
-        if password:
-            st.error("Password Admin salah.")
+        with st.sidebar:
+            st.header(f"Admin Logged In")
+            if st.button("Logout"):
+                st.session_state.admin_logged_in = False
+                st.rerun()
+        
+        admin_view()
 
