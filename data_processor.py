@@ -223,3 +223,23 @@ def clear_all_scores():
         conn.execute(text("DELETE FROM scores"))
         conn.commit()
 
+def get_full_report_preview(limit=1000):
+    """Returns a joined dataframe of Students and Scores for preview."""
+    conn = get_db_connection()
+    try:
+        query = """
+        SELECT 
+            s.name as "Nama Siswa", 
+            sc.subject as "Mata Pelajaran", 
+            sc.score_type as "Tipe Nilai", 
+            sc.score as "Nilai"
+        FROM scores sc
+        JOIN students s ON sc.student_id = s.id
+        """
+        df = pd.read_sql(query, conn)
+        return df
+    except Exception:
+        return pd.DataFrame()
+    finally:
+        conn.close()
+

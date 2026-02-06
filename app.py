@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from data_processor import init_db, parse_data, save_to_db, get_all_students, get_student_report, regenerate_token, clear_all_scores, get_setting, set_setting
+from data_processor import init_db, parse_data, save_to_db, get_all_students, get_student_report, regenerate_token, clear_all_scores, get_setting, set_setting, get_full_report_preview
 
 # Page Config
 st.set_page_config(page_title="Rapor Siswa", page_icon="📝", layout="centered")
@@ -29,7 +29,7 @@ def admin_view():
         st.success("URL Dasar telah disimpan!")
     
     
-    with st.expander("Upload Data Baru", expanded=True):
+    with st.expander("Upload Data Baru", expanded=False):
         uploaded_file = st.file_uploader("Upload CSV atau Excel", type=['csv', 'xlsx'])
         if uploaded_file is not None:
             try:
@@ -53,6 +53,17 @@ def admin_view():
 
             except Exception as e:
                 st.error(f"Gagal memproses file: {e}")
+
+    st.subheader("Data Tersimpan Saat Ini")
+    current_df = get_full_report_preview()
+    if not current_df.empty:
+        c1, c2 = st.columns([1, 1])
+        c1.metric("Total Data Nilai", len(current_df))
+        c1.metric("Total Siswa", current_df['Nama Siswa'].nunique())
+        
+        st.dataframe(current_df, use_container_width=True, height=250)
+    else:
+        st.info("Database masih kosong.")
 
     st.subheader("Kelola Data")
     if st.button("🗑️ Hapus Semua Nilai Saja (Link Tetap Ada)"):
