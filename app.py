@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from data_processor import init_db, parse_data, save_to_db, get_all_students, get_student_report, regenerate_token, clear_all_scores
+from data_processor import init_db, parse_data, save_to_db, get_all_students, get_student_report, regenerate_token, clear_all_scores, get_setting, set_setting
 
 # Page Config
 st.set_page_config(page_title="Rapor Siswa", page_icon="📝", layout="centered")
@@ -14,14 +14,19 @@ def admin_view():
     st.title("Dashboard Admin 🔒")
     
     # Base URL configuration
+    # Base URL configuration (Persistent in DB)
+    saved_base_url = get_setting("base_url", "http://localhost:8501")
+    
     if "base_url" not in st.session_state:
-        st.session_state.base_url = "http://localhost:8501"
+        st.session_state.base_url = saved_base_url
         
     base_url = st.text_input("URL Dasar Aplikasi (untuk link)", value=st.session_state.base_url)
     
-    # Update session state when input changes
-    if base_url != st.session_state.base_url:
+    # Update DB if changed
+    if base_url != saved_base_url:
+        set_setting("base_url", base_url)
         st.session_state.base_url = base_url
+        st.success("URL Dasar telah disimpan!")
     
     
     with st.expander("Upload Data Baru", expanded=True):
@@ -159,24 +164,37 @@ def parent_view(token):
 
 # --- MAIN ROUTING ---
 
+# --- MAIN ROUTING ---
+
 # Check query params
 query_params = st.query_params
 token = query_params.get("token", None)
+admin_session = query_params.get("session", None)
+
+ADMIN_PASSWORD = "dedePetot!"
+# Simple hash simulation for session token (in real app use proper hashing)
+SESSION_TOKEN = f"auth_{hash(ADMIN_PASSWORD)}"
 
 if token:
     parent_view(token)
 else:
-    # Admin Login simulation (Sidebar)
+    # Check if already logged in via Session State OR URL Param
     if "admin_logged_in" not in st.session_state:
         st.session_state.admin_logged_in = False
+        
+    # Auto-login if valid session token in URL
+    if admin_session == SESSION_TOKEN:
+         st.session_state.admin_logged_in = True
 
     if not st.session_state.admin_logged_in:
         with st.sidebar:
             st.header("Akses Admin")
             password = st.text_input("Password", type="password")
             if st.button("Login"):
-                if password == "dedePetot!": # Simple hardcoded password
+                if password == ADMIN_PASSWORD:
                     st.session_state.admin_logged_in = True
+                    # Set persistent session in URL
+                    st.query_params["session"] = SESSION_TOKEN
                     st.rerun()
                 elif password:
                     st.error("Password Admin salah.")
@@ -185,6 +203,9 @@ else:
             st.header(f"Admin Logged In")
             if st.button("Logout"):
                 st.session_state.admin_logged_in = False
+                # Clear session from URL
+                if "session" in st.query_params:
+                    del st.query_params["session"]
                 st.rerun()
         
         admin_view()

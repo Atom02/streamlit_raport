@@ -7,7 +7,7 @@ import os
 DB_PATH = 'report_card.db'
 
 def init_db():
-    """Initializes the SQLite database with students and scores tables."""
+    """Initializes the SQLite database with students, scores, and settings tables."""
     engine = create_engine(f'sqlite:///{DB_PATH}')
     
     with engine.connect() as conn:
@@ -30,11 +30,37 @@ def init_db():
                 FOREIGN KEY(student_id) REFERENCES students(id)
             )
         """))
+        
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """))
         conn.commit()
     return engine
 
 def get_db_connection():
     return sqlite3.connect(DB_PATH)
+
+def get_setting(key, default=None):
+    """Retrieves a setting value from the database."""
+    engine = create_engine(f'sqlite:///{DB_PATH}')
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT value FROM settings WHERE key = :key"), {'key': key}).fetchone()
+        if result:
+            return result[0]
+    return default
+
+def set_setting(key, value):
+    """Saves a setting value to the database."""
+    engine = create_engine(f'sqlite:///{DB_PATH}')
+    with engine.connect() as conn:
+        conn.execute(text("""
+            INSERT INTO settings (key, value) VALUES (:key, :value)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        """), {'key': key, 'value': value})
+        conn.commit()
 
 def regenerate_token(student_id):
     """Regenerates the access token for a student."""
